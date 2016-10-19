@@ -9,27 +9,47 @@ namespace NEOProgramParser
 {
     class ProgramParser
     {
-        List<byte> loadedBytes;
+        static readonly int metaDataSize = 24;
 
+        List<byte> loadedBytes;
+        
         byte[] programName = new byte[8];
+        List<ProgramStep> steps = new List<ProgramStep>();
 
         public ProgramParser(string path)
         {
             loadedBytes = new List<byte>(File.ReadAllBytes(path));
 
-            GetProgramName();
+            ParseProgramName();
+            ParseProgramSteps();
 
             Console.WriteLine("Program Name: " + PrettyPrintProgramName());
-            Console.Write(this.PrettyPrintLoadedBytes());
+            //Console.Write(this.PrettyPrintLoadedBytes());
+            Console.Write(this.PrettyPrintProgramSteps());
 
             Console.ReadKey();
         }
 
-        void GetProgramName()
+        void ParseProgramName()
         {
             for (int i = 0; i < programName.Length; i++)
             {
                 programName[i] = loadedBytes[1 + i];
+            }
+        }
+
+        void ParseProgramSteps()
+        {
+            for (int i = metaDataSize; i < loadedBytes.Count; i += ProgramStep.stepSizeInBytes)
+            {
+                List<byte> list = new List<byte>();
+                
+                for (int k = 0; k < ProgramStep.stepSizeInBytes; k++)
+                {
+                    list.Add(loadedBytes[i + k]);
+                }
+
+                steps.Add(new ProgramStep(list.ToArray()));
             }
         }
 
@@ -40,6 +60,18 @@ namespace NEOProgramParser
             foreach (byte b in programName)
             {
                 s += Convert.ToChar(b);
+            }
+
+            return s;
+        }
+
+        string PrettyPrintProgramSteps()
+        {
+            string s = "";
+
+            foreach (ProgramStep ps in steps)
+            {
+                s += ps.ToString() + "\n\n";
             }
 
             return s;
