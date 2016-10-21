@@ -25,7 +25,7 @@ namespace NEOProgramParser
 
             Console.WriteLine("Program Name: " + PrettyPrintProgramName());
             //Console.Write(this.PrettyPrintLoadedBytes());
-            Console.Write(this.PrettyPrintProgramSteps());
+            Console.Write(this.PrettyPrintProgramStepsByte());
 
             Console.ReadKey();
         }
@@ -49,7 +49,12 @@ namespace NEOProgramParser
                     list.Add(loadedBytes[i + k]);
                 }
 
-                steps.Add(new ProgramStep(list.ToArray()));
+                ProgramStep ps = ProgramStep.CreateProgramStep(list.ToArray());
+
+                if (ps != null)
+                {
+                    steps.Add(ps);
+                }
             }
         }
 
@@ -65,7 +70,38 @@ namespace NEOProgramParser
             return s;
         }
 
-        string PrettyPrintProgramSteps()
+        string PrettyPrintProgramStepsByte()
+        {
+            string s = "";
+
+            foreach (ProgramStep ps in steps)
+            {
+                byte[] bytes = ps.Convert();
+
+                s += "Step: Size " + ps.CalcFinalByteCount() + " - " + bytes.Length + "\n";
+
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    s += bytes[i].ToString("x2");
+
+                    if ((i + 1) % 2 == 0)
+                    {
+                        s += " ";
+                    }
+
+                    if ((i + 1) % 16 == 0 && i > 0)
+                    {
+                        s += "\n";
+                    }
+                }
+
+                s += "\n";
+            }
+
+            return s;
+        }
+
+        string PrettyPrintProgramStepsString()
         {
             string s = "";
 
