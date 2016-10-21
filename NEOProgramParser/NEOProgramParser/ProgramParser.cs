@@ -78,7 +78,7 @@ namespace NEOProgramParser
             {
                 byte[] bytes = ps.Convert();
 
-                s += "Step: Size " + ps.CalcFinalByteCount() + " - " + bytes.Length + "\n";
+                s += "Step: size " + ps.CalcFinalByteCount() + " - " + bytes.Length + "\n";
 
                 for (int i = 0; i < bytes.Length; i++)
                 {
@@ -88,14 +88,9 @@ namespace NEOProgramParser
                     {
                         s += " ";
                     }
-
-                    if ((i + 1) % 16 == 0 && i > 0)
-                    {
-                        s += "\n";
-                    }
                 }
 
-                s += "\n";
+                s += "\n\n";
             }
 
             return s;
