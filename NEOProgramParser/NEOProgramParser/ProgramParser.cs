@@ -11,9 +11,11 @@ namespace NEOProgramParser
     {
         static readonly int metaDataSize = 24;
 
+        public byte[] ProgramName = new byte[8];
+        public byte[] WordCount = new byte[2];
+
         List<byte> loadedBytes;
-        
-        byte[] programName = new byte[8];
+       
         List<ProgramStep> steps = new List<ProgramStep>();
 
         public ProgramParser(string path)
@@ -22,23 +24,24 @@ namespace NEOProgramParser
 
             ParseProgramName();
             ParseProgramSteps();
+            ParseWordCount();
 
-            Console.WriteLine("Program Name: " + PrettyPrintProgramName());
+            //Console.WriteLine("Program Name: " + PrettyPrintProgramName());
             //Console.Write(this.PrettyPrintLoadedBytes());
-            Console.Write(this.PrettyPrintProgramStepsByte());
+            //Console.Write(this.PrettyPrintProgramStepsByte());
 
-            Console.ReadKey();
+            //Console.ReadKey();
         }
 
-        void ParseProgramName()
+        private void ParseProgramName()
         {
-            for (int i = 0; i < programName.Length; i++)
+            for (int i = 0; i < ProgramName.Length; i++)
             {
-                programName[i] = loadedBytes[1 + i];
+                ProgramName[i] = loadedBytes[1 + i];
             }
         }
 
-        void ParseProgramSteps()
+        private void ParseProgramSteps()
         {
             for (int i = metaDataSize; i < loadedBytes.Count; i += ProgramStep.stepSizeInBytes)
             {
@@ -58,11 +61,46 @@ namespace NEOProgramParser
             }
         }
 
+        private void ParseWordCount()
+        {
+            int count = 0;
+
+            foreach (ProgramStep ps in steps)
+            {
+                count += ps.CalcFinalWordCount(); 
+            }
+
+            this.WordCount[0] = (byte)((count & 0xFF00) >> 8);
+            this.WordCount[1] = (byte)(count & 0xFF);
+        }
+
+        public void WriteToFile()
+        {
+            int count = this.WordCount[0] << 8;
+            count = count | this.WordCount[1];
+
+            byte[] bytes = new byte[count * 2];
+            int itr = 0;
+
+            foreach (ProgramStep ps in steps)
+            {
+                byte[][] words = ps.Convert();
+
+                foreach (byte[] word in words)
+                {
+                    bytes[itr++] = word[0];
+                    bytes[itr++] = word[1];
+                }
+            }
+
+            File.WriteAllBytes(Directory.GetCurrentDirectory() + "\\" + PrettyPrintProgramName() + " - Translated.txt", bytes);
+        }
+
         private string PrettyPrintProgramName()
         {
             string s = "";
 
-            foreach (byte b in programName)
+            foreach (byte b in ProgramName)
             {
                 s += Convert.ToChar(b);
             }

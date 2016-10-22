@@ -25,7 +25,7 @@ namespace NEOProgramParser
             else
             {
                 Console.WriteLine("Path: " + args[0] + "\n");
-                new ProgramParser(args[0]);
+                new ProgramParser(args[0]).WriteToFile();
             }
         }
     }
