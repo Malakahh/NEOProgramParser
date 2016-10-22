@@ -55,7 +55,7 @@ namespace NEOProgramParser
             return this.bytes[(int)psb] != 0xFF;
         }
 
-        public int CalcFinalByteCount()
+        public int CalcFinalWordCount()
         {
             int cntWords = 2; // We have a defined minimum if two WORDS
             ProgramStepBytes[] toTest = new ProgramStepBytes[]
@@ -71,60 +71,173 @@ namespace NEOProgramParser
             foreach (ProgramStepBytes psb in toTest)
             {
                 if (IsSet(psb))
+                {
                     cntWords++;
+
+                    //These require two words, per documnetation
+                    if (psb == ProgramStepBytes.RelativeTimeJumpStep || psb == ProgramStepBytes.AbsoluteTimeJumpStep)
+                    {
+                        cntWords++;
+                    }
+                }
             }
 
-            return cntWords * 2; //Multiply by 2 to get bytes size
+            return cntWords;
         }
 
-        private byte[] GenerateWordVoltageSetPoint()
+        private byte[] GenerateWord_VoltageSetPoint()
         {
             byte[] word = new byte[2] { 0, 0 };
 
             word[0] = (byte)(this.bytes[(int)ProgramStepBytes.Voltage_ByteHigh] & 0x03);
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.CurrentLowJumpStep)) << 2));
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.CurrentHighJumpStep)) << 3));
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.VoltageLowJumpStep)) << 4));
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.VoltageHighJumpStep)) << 5));
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.RelativeTimeJumpStep)) << 6));
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.AbsoluteTimeJumpStep)) << 7));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.CurrentLowJumpStep)) << 2));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.CurrentHighJumpStep)) << 3));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.VoltageLowJumpStep)) << 4));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.VoltageHighJumpStep)) << 5));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.RelativeTimeJumpStep)) << 6));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.AbsoluteTimeJumpStep)) << 7));
 
             word[1] = this.bytes[(int)ProgramStepBytes.Voltage_ByteLow];
 
             return word;
         }
 
-        private byte[] GenerateWordCurrentSetPoint()
+        private byte[] GenerateWord_CurrentSetPoint()
         {
             byte[] word = new byte[2] { 0, 0 };
 
             word[0] = (byte)(this.bytes[(int)ProgramStepBytes.Current_ByteHigh] & 0x03);
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.C)) << 2));
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.F)) << 3));
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.E)) << 4));
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.S)) << 5));
-            word[0] = (byte)(word[0] | (BoolToBit(IsSet(ProgramStepBytes.T)) << 6));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.C)) << 2));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.F)) << 3));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.E)) << 4));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.S)) << 5));
+            word[0] = (byte)( word[0] | (BoolToBit(IsSet(ProgramStepBytes.T)) << 6));
 
             word[1] = this.bytes[(int)ProgramStepBytes.Current_ByteLow];
 
             return word;
         }
 
-        public byte[] Convert()
+        private byte[][] GenerateWords_TimeJump(ProgramStepBytes step, ProgramStepBytes b0, ProgramStepBytes b1, ProgramStepBytes b2)
         {
-            byte[] bytes = new byte[CalcFinalByteCount()];
+            byte[][] words = new byte[2][];
+            words[0] = new byte[2] { 0, 0 };
+            words[1] = new byte[2] { 0, 0 };
 
-            byte[] wordVoltageSetPoint = GenerateWordVoltageSetPoint();
-            bytes[0] = wordVoltageSetPoint[0];
-            bytes[1] = wordVoltageSetPoint[1];
+            words[0][0] = (byte)(this.bytes[(int)step] << 2); //Because... reason. Documentation states this needs to be the case
+            words[0][1] = this.bytes[(int)b0];
 
-            byte[] wordCurrentSetPoint = GenerateWordCurrentSetPoint();
-            bytes[2] = wordCurrentSetPoint[0];
-            bytes[3] = wordCurrentSetPoint[1];
+            words[1][0] = this.bytes[(int)b2];
+            words[1][0] = this.bytes[(int)b1];
 
-            //TODO
+            return words;
+        }
 
-            return bytes;
+        private byte[][] GenerateWords_AbsoluteJump()
+        {
+            return GenerateWords_TimeJump(
+                ProgramStepBytes.AbsoluteTimeJumpStep,
+                ProgramStepBytes.AbsoluteTime_0,
+                ProgramStepBytes.AbsoluteTime_1,
+                ProgramStepBytes.AbsoluteTime_2);
+        }
+
+        private byte[][] GenerateWords_RelativeJump()
+        {
+            return GenerateWords_TimeJump(
+                ProgramStepBytes.RelativeTimeJumpStep,
+                ProgramStepBytes.RelativeTime_0,
+                ProgramStepBytes.RelativeTime_1,
+                ProgramStepBytes.RelativeTime_2);
+        }
+
+        private byte[] GenerateWord_BasicJump(ProgramStepBytes step, ProgramStepBytes high, ProgramStepBytes low)
+        {
+            byte[] word = new byte[2] { 0, 0 };
+
+            word[0] = (byte)((this.bytes[(int)step] & 0x3F) << 2); //6 bit
+            word[0] = (byte)(word[0] | (this.bytes[(int)high] & 0x03));
+
+            word[1] = this.bytes[(int)low];
+
+            return word;
+        }
+
+        private byte[] GenerateWord_VoltageHighJump()
+        {
+            return GenerateWord_BasicJump(
+                ProgramStepBytes.VoltageHighJumpStep,
+                ProgramStepBytes.VoltageHighJump_ByteHigh,
+                ProgramStepBytes.VoltageHighJump_ByteLow);
+        }
+
+        private byte[] GenerateWord_VoltageLowJump()
+        {
+            return GenerateWord_BasicJump(
+                ProgramStepBytes.VoltageLowJumpStep,
+                ProgramStepBytes.VoltageLowJump_ByteHigh,
+                ProgramStepBytes.VoltageLowJump_ByteLow);
+        }
+
+        private byte[] GenerateWord_CurrentHighJump()
+        {
+            return GenerateWord_BasicJump(
+                ProgramStepBytes.CurrentHighJumpStep,
+                ProgramStepBytes.CurrentHighJump_ByteHigh,
+                ProgramStepBytes.CurrentHighJump_ByteLow);
+        }
+
+        private byte[] GenerateWord_CurrentLowJump()
+        {
+            return GenerateWord_BasicJump(
+                ProgramStepBytes.CurrentLowJumpStep,
+                ProgramStepBytes.CurrentLowJump_ByteHigh,
+                ProgramStepBytes.CurrentLowJump_ByteLow);
+        }
+
+        public byte[][] Convert()
+        {
+            byte[][] words = new byte[CalcFinalWordCount()][];
+            int itr = 0;
+
+            words[itr++] = GenerateWord_VoltageSetPoint();
+            words[itr++] = GenerateWord_CurrentSetPoint();
+
+            if (IsSet(ProgramStepBytes.AbsoluteTimeJumpStep))
+            {
+                byte[][] temp = GenerateWords_AbsoluteJump();
+                words[itr++] = temp[0];
+                words[itr++] = temp[1];
+            }
+
+            if (IsSet(ProgramStepBytes.RelativeTimeJumpStep))
+            {
+                byte[][] temp = GenerateWords_RelativeJump();
+                words[itr++] = temp[0];
+                words[itr++] = temp[1];
+            }
+
+            if (IsSet(ProgramStepBytes.VoltageHighJumpStep))
+            {
+                words[itr++] = GenerateWord_VoltageHighJump();
+            }
+
+            if (IsSet(ProgramStepBytes.VoltageLowJumpStep))
+            {
+                words[itr++] = GenerateWord_VoltageLowJump();
+            }
+
+            if (IsSet(ProgramStepBytes.CurrentHighJumpStep))
+            {
+                words[itr++] = GenerateWord_CurrentHighJump();
+            }
+
+            if (IsSet(ProgramStepBytes.CurrentLowJumpStep))
+            {
+                words[itr++] = GenerateWord_CurrentLowJump();
+            }
+
+            return words;
         }
 
         public override string ToString()
