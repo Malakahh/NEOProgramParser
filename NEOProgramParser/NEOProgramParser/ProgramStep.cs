@@ -128,7 +128,7 @@ namespace NEOProgramParser
             words[0][1] = this.bytes[(int)b0];
 
             words[1][0] = this.bytes[(int)b2];
-            words[1][0] = this.bytes[(int)b1];
+            words[1][1] = this.bytes[(int)b1];
 
             return words;
         }

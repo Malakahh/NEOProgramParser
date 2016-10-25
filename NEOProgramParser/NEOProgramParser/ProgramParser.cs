@@ -58,6 +58,10 @@ namespace NEOProgramParser
                 {
                     steps.Add(ps);
                 }
+                else
+                {
+                    break;
+                }
             }
         }
 
