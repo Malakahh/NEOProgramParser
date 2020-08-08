@@ -15,7 +15,7 @@ namespace NEOProgramParser
 
             //Laptop
             //args = new string[] { "C:\\GitRepos\\NEOProgramParser\\NEOProgramParser\\NEOProgramParser\\NB241017.GBC" };
-            args = new string[] { "C:\\GitRepos\\NEOProgramParser\\NEOProgramParser\\NEOProgramParser\\SMALLTST.GBC" };
+            //args = new string[] { "C:\\GitRepos\\NEOProgramParser\\NEOProgramParser\\NEOProgramParser\\SMALLTST.GBC" };
 
             if (args.Length == 0)
             {
